@@ -148,11 +148,15 @@ impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
         )
     }
 
-    fn deserialize_f32<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        Err(Error::UnsupportedType)
+        match self.input {
+            rmpv::Value::F32(v) => visitor.visit_f32(*v),
+            rmpv::Value::F64(v) => visitor.visit_f32(*v as f32),
+            _ => Err(Error::TypeError("expected f32".to_string())),
+        }
     }
 
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value>
@@ -680,6 +684,16 @@ mod tests {
         );
 
         assert_eq!(42, from_value::<i64>(&rmpv::Value::from(42)).unwrap());
+
+        assert_eq!(
+            42.0f32,
+            from_value::<f32>(&rmpv::Value::F32(42.0f32)).unwrap()
+        );
+        assert_eq!(
+            42.0f32,
+            from_value::<f32>(&rmpv::Value::F64(42.0f64)).unwrap()
+        );
+        from_value::<f32>(&rmpv::Value::from("foo")).expect_err("expected type error");
 
         #[derive(Debug, PartialEq, Deserialize)]
         struct TestStruct {

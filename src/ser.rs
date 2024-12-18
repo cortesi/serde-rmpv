@@ -98,7 +98,8 @@ impl ser::Serializer for &mut Serializer {
     }
 
     fn serialize_f32(self, v: f32) -> Result<()> {
-        self.serialize_f64(f64::from(v))
+        self.output = rmpv::Value::F32(v);
+        Ok(())
     }
 
     fn serialize_f64(self, v: f64) -> Result<()> {
@@ -478,6 +479,11 @@ mod tests {
                 rmpv::Value::from(3)
             ])
         );
+
+        let f32val: f32 = 42.0;
+        assert_eq!(to_value(&f32val).unwrap(), rmpv::Value::F32(42.0));
+        let f64val: f64 = 42.0;
+        assert_eq!(to_value(&f64val).unwrap(), rmpv::Value::F64(42.0));
 
         #[derive(Serialize)]
         struct TupleStruct(u8, u8);
