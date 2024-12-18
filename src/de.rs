@@ -193,22 +193,21 @@ impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        visitor.visit_borrowed_str(
-            self.input
-                .as_str()
-                .ok_or(Error::TypeError(format!("expected string: {}", self.input)))?,
-        )
+        match self.input {
+            rmpv::Value::String(s) => match s.as_str() {
+                Some(s) => visitor.visit_borrowed_str(s),
+                None => visitor.visit_bytes(s.as_bytes()),
+            },
+            rmpv::Value::Binary(b) => visitor.visit_bytes(b),
+            _ => Err(Error::TypeError(format!("expected string: {}", self.input))),
+        }
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_borrowed_str(
-            self.input
-                .as_str()
-                .ok_or(Error::TypeError(format!("expected string: {}", self.input)))?,
-        )
+        self.deserialize_str(visitor)
     }
 
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
@@ -698,9 +697,21 @@ mod tests {
             .expect_err("expected single char error");
         from_value::<char>(&rmpv::Value::from(42)).expect_err("expected type error");
 
+        // String deserialization cases
         assert_eq!(
             "string",
             from_value::<String>(&rmpv::Value::from("string")).unwrap()
+        );
+        assert_eq!(
+            "binary",
+            from_value::<String>(&rmpv::Value::Binary(b"binary".to_vec())).unwrap()
+        );
+        from_value::<String>(&rmpv::Value::from(42)).expect_err("expected type error");
+
+        // str deserialization
+        assert_eq!(
+            "string",
+            from_value::<&str>(&rmpv::Value::from("string")).unwrap()
         );
 
         assert_eq!(42, from_value::<i64>(&rmpv::Value::from(42)).unwrap());
