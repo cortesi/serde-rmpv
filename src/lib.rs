@@ -3,7 +3,7 @@ mod error;
 mod ser;
 
 pub use de::*;
-pub use error::*;
+pub use error::Error;
 pub use ser::*;
 
 pub const MSGPACK_EXT_STRUCT_NAME: &str = "_ExtStruct";

@@ -1,11 +1,8 @@
 use serde::{ser, Serialize};
 
-use crate::{
-    error::{Error, Result},
-    MSGPACK_EXT_STRUCT_NAME,
-};
+use crate::{error::*, MSGPACK_EXT_STRUCT_NAME};
 
-pub fn to_value<T>(value: &T) -> Result<rmpv::Value>
+pub fn to_value<T>(value: &T) -> Result<rmpv::Value, Error>
 where
     T: Serialize,
 {
@@ -16,13 +13,13 @@ where
     Ok(serializer.output)
 }
 
-pub struct Serializer {
+struct Serializer {
     output: rmpv::Value,
 }
 
 impl Serializer {
     // Serialize a single element of the sequence.
-    fn serialize_seq_element<T>(&mut self, value: &T) -> Result<()>
+    fn serialize_seq_element<T>(&mut self, value: &T) -> RResult<()>
     where
         T: ?Sized + Serialize,
     {
@@ -35,7 +32,7 @@ impl Serializer {
                 vec.push(serializer.output);
                 Ok(())
             }
-            _ => Err(Error::Message("expected array".to_string())),
+            _ => Err(Error::TypeError("expected array".to_string())),
         }
     }
 }
@@ -58,73 +55,73 @@ impl ser::Serializer for &mut Serializer {
     type SerializeStruct = Self;
     type SerializeStructVariant = Self;
 
-    fn serialize_bool(self, v: bool) -> Result<()> {
+    fn serialize_bool(self, v: bool) -> RResult<()> {
         self.output = rmpv::Value::Boolean(v);
         Ok(())
     }
 
-    fn serialize_i8(self, v: i8) -> Result<()> {
+    fn serialize_i8(self, v: i8) -> RResult<()> {
         self.serialize_i64(i64::from(v))
     }
 
-    fn serialize_i16(self, v: i16) -> Result<()> {
+    fn serialize_i16(self, v: i16) -> RResult<()> {
         self.serialize_i64(i64::from(v))
     }
 
-    fn serialize_i32(self, v: i32) -> Result<()> {
+    fn serialize_i32(self, v: i32) -> RResult<()> {
         self.serialize_i64(i64::from(v))
     }
 
-    fn serialize_i64(self, v: i64) -> Result<()> {
+    fn serialize_i64(self, v: i64) -> RResult<()> {
         self.output = rmpv::Value::Integer(v.into());
         Ok(())
     }
 
-    fn serialize_u8(self, v: u8) -> Result<()> {
+    fn serialize_u8(self, v: u8) -> RResult<()> {
         self.serialize_u64(u64::from(v))
     }
 
-    fn serialize_u16(self, v: u16) -> Result<()> {
+    fn serialize_u16(self, v: u16) -> RResult<()> {
         self.serialize_u64(u64::from(v))
     }
 
-    fn serialize_u32(self, v: u32) -> Result<()> {
+    fn serialize_u32(self, v: u32) -> RResult<()> {
         self.serialize_u64(u64::from(v))
     }
 
-    fn serialize_u64(self, v: u64) -> Result<()> {
+    fn serialize_u64(self, v: u64) -> RResult<()> {
         self.output = rmpv::Value::Integer(v.into());
         Ok(())
     }
 
-    fn serialize_f32(self, v: f32) -> Result<()> {
+    fn serialize_f32(self, v: f32) -> RResult<()> {
         self.output = rmpv::Value::F32(v);
         Ok(())
     }
 
-    fn serialize_f64(self, v: f64) -> Result<()> {
+    fn serialize_f64(self, v: f64) -> RResult<()> {
         self.output = rmpv::Value::F64(v);
         Ok(())
     }
 
     // Serialize a char as a single-character string.
-    fn serialize_char(self, v: char) -> Result<()> {
+    fn serialize_char(self, v: char) -> RResult<()> {
         self.output = rmpv::Value::String(v.to_string().into());
         Ok(())
     }
 
-    fn serialize_str(self, v: &str) -> Result<()> {
+    fn serialize_str(self, v: &str) -> RResult<()> {
         self.output = rmpv::Value::String(v.to_string().into());
         Ok(())
     }
 
-    fn serialize_bytes(self, v: &[u8]) -> Result<()> {
+    fn serialize_bytes(self, v: &[u8]) -> RResult<()> {
         self.output = rmpv::Value::Binary(v.into());
         Ok(())
     }
 
     // A present optional is represented as just the contained value.
-    fn serialize_some<T>(self, value: &T) -> Result<()>
+    fn serialize_some<T>(self, value: &T) -> RResult<()>
     where
         T: ?Sized + Serialize,
     {
@@ -133,14 +130,14 @@ impl ser::Serializer for &mut Serializer {
 
     // In Serde, unit means an anonymous value containing no data. Map this to
     // msgpack as `null`.
-    fn serialize_unit(self) -> Result<()> {
+    fn serialize_unit(self) -> RResult<()> {
         self.output = rmpv::Value::Nil;
         Ok(())
     }
 
     // Unit struct means a named value containing no data. Again, since there is
     // no data, map this to msgpack as `nil`.
-    fn serialize_unit_struct(self, _name: &'static str) -> Result<()> {
+    fn serialize_unit_struct(self, _name: &'static str) -> RResult<()> {
         self.serialize_unit()
     }
 
@@ -153,13 +150,13 @@ impl ser::Serializer for &mut Serializer {
         _name: &'static str,
         _variant_index: u32,
         variant: &'static str,
-    ) -> Result<()> {
+    ) -> RResult<()> {
         self.serialize_str(variant)
     }
 
     // As is done here, serializers are encouraged to treat newtype structs as
     // insignificant wrappers around the data they contain.
-    fn serialize_newtype_struct<T>(self, name: &'static str, value: &T) -> Result<()>
+    fn serialize_newtype_struct<T>(self, name: &'static str, value: &T) -> RResult<()>
     where
         T: ?Sized + Serialize,
     {
@@ -174,13 +171,13 @@ impl ser::Serializer for &mut Serializer {
                     }
                 }
             }
-            Err(Error::Message("invalid ext struct".to_string()))
+            Err(Error::TypeError("invalid ext struct".to_string()))
         } else {
             value.serialize(self)
         }
     }
 
-    fn serialize_none(self) -> Result<()> {
+    fn serialize_none(self) -> RResult<()> {
         self.serialize_unit()
     }
 
@@ -191,7 +188,7 @@ impl ser::Serializer for &mut Serializer {
         _variant_index: u32,
         variant: &'static str,
         value: &T,
-    ) -> Result<()>
+    ) -> RResult<()>
     where
         T: ?Sized + Serialize,
     {
@@ -212,13 +209,13 @@ impl ser::Serializer for &mut Serializer {
     //
     // The start of the sequence, each value, and the end are three separate
     // method calls.
-    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq> {
+    fn serialize_seq(self, _len: Option<usize>) -> RResult<Self::SerializeSeq> {
         self.output = rmpv::Value::Array(Vec::new());
         Ok(self)
     }
 
     // Tuples look just like sequences.
-    fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple> {
+    fn serialize_tuple(self, len: usize) -> RResult<Self::SerializeTuple> {
         self.serialize_seq(Some(len))
     }
 
@@ -227,7 +224,7 @@ impl ser::Serializer for &mut Serializer {
         self,
         _name: &'static str,
         len: usize,
-    ) -> Result<Self::SerializeTupleStruct> {
+    ) -> RResult<Self::SerializeTupleStruct> {
         self.serialize_seq(Some(len))
     }
 
@@ -238,7 +235,7 @@ impl ser::Serializer for &mut Serializer {
         _variant_index: u32,
         variant: &'static str,
         _len: usize,
-    ) -> Result<Self::SerializeTupleVariant> {
+    ) -> RResult<Self::SerializeTupleVariant> {
         self.output = rmpv::Value::Array(vec![
             rmpv::Value::String(name.into()),
             rmpv::Value::String(variant.into()),
@@ -246,13 +243,13 @@ impl ser::Serializer for &mut Serializer {
         Ok(self)
     }
 
-    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap> {
+    fn serialize_map(self, _len: Option<usize>) -> RResult<Self::SerializeMap> {
         self.output = rmpv::Value::Map(Vec::new());
         Ok(self)
     }
 
     // Structs look just like maps.
-    fn serialize_struct(self, _name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
+    fn serialize_struct(self, _name: &'static str, len: usize) -> RResult<Self::SerializeStruct> {
         self.serialize_map(Some(len))
     }
 
@@ -264,7 +261,7 @@ impl ser::Serializer for &mut Serializer {
         _variant_index: u32,
         variant: &'static str,
         _len: usize,
-    ) -> Result<Self::SerializeStructVariant> {
+    ) -> RResult<Self::SerializeStructVariant> {
         self.output = rmpv::Value::Array(vec![
             rmpv::Value::String(name.into()),
             rmpv::Value::String(variant.into()),
@@ -278,14 +275,14 @@ impl ser::SerializeSeq for &mut Serializer {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_element<T>(&mut self, value: &T) -> Result<()>
+    fn serialize_element<T>(&mut self, value: &T) -> RResult<()>
     where
         T: ?Sized + Serialize,
     {
         self.serialize_seq_element(value)
     }
 
-    fn end(self) -> Result<()> {
+    fn end(self) -> RResult<()> {
         Ok(())
     }
 }
@@ -294,14 +291,14 @@ impl ser::SerializeTuple for &mut Serializer {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_element<T>(&mut self, value: &T) -> Result<()>
+    fn serialize_element<T>(&mut self, value: &T) -> RResult<()>
     where
         T: ?Sized + Serialize,
     {
         self.serialize_seq_element(value)
     }
 
-    fn end(self) -> Result<()> {
+    fn end(self) -> RResult<()> {
         Ok(())
     }
 }
@@ -310,14 +307,14 @@ impl ser::SerializeTupleStruct for &mut Serializer {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_field<T>(&mut self, value: &T) -> Result<()>
+    fn serialize_field<T>(&mut self, value: &T) -> RResult<()>
     where
         T: ?Sized + Serialize,
     {
         self.serialize_seq_element(value)
     }
 
-    fn end(self) -> Result<()> {
+    fn end(self) -> RResult<()> {
         Ok(())
     }
 }
@@ -326,14 +323,14 @@ impl ser::SerializeTupleVariant for &mut Serializer {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_field<T>(&mut self, value: &T) -> Result<()>
+    fn serialize_field<T>(&mut self, value: &T) -> RResult<()>
     where
         T: ?Sized + Serialize,
     {
         self.serialize_seq_element(value)
     }
 
-    fn end(self) -> Result<()> {
+    fn end(self) -> RResult<()> {
         Ok(())
     }
 }
@@ -342,7 +339,7 @@ impl ser::SerializeMap for &mut Serializer {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_key<T>(&mut self, key: &T) -> Result<()>
+    fn serialize_key<T>(&mut self, key: &T) -> RResult<()>
     where
         T: ?Sized + Serialize,
     {
@@ -355,11 +352,11 @@ impl ser::SerializeMap for &mut Serializer {
                 vec.push((serializer.output, rmpv::Value::Nil));
                 Ok(())
             }
-            _ => Err(Error::Message("expected map".to_string())),
+            _ => Err(Error::TypeError("expected map".to_string())),
         }
     }
 
-    fn serialize_value<T>(&mut self, value: &T) -> Result<()>
+    fn serialize_value<T>(&mut self, value: &T) -> RResult<()>
     where
         T: ?Sized + Serialize,
     {
@@ -373,11 +370,11 @@ impl ser::SerializeMap for &mut Serializer {
                 vec[last].1 = serializer.output;
                 Ok(())
             }
-            _ => Err(Error::Message("expected map".to_string())),
+            _ => Err(Error::TypeError("expected map".to_string())),
         }
     }
 
-    fn end(self) -> Result<()> {
+    fn end(self) -> RResult<()> {
         Ok(())
     }
 }
@@ -386,7 +383,7 @@ impl ser::SerializeStruct for &mut Serializer {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<()>
+    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> RResult<()>
     where
         T: ?Sized + Serialize,
     {
@@ -405,11 +402,11 @@ impl ser::SerializeStruct for &mut Serializer {
                 vec.push((keyser.output, valser.output));
                 Ok(())
             }
-            _ => Err(Error::Message("expected map".to_string())),
+            _ => Err(Error::TypeError("expected map".to_string())),
         }
     }
 
-    fn end(self) -> Result<()> {
+    fn end(self) -> RResult<()> {
         Ok(())
     }
 }
@@ -418,7 +415,7 @@ impl ser::SerializeStructVariant for &mut Serializer {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<()>
+    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> RResult<()>
     where
         T: ?Sized + Serialize,
     {
@@ -435,15 +432,15 @@ impl ser::SerializeStructVariant for &mut Serializer {
                     rmpv::Value::Map(ref mut map) => {
                         map.push((rmpv::Value::String(key.into()), serializer.output));
                     }
-                    _ => return Err(Error::Message("expected map".to_string())),
+                    _ => return Err(Error::TypeError("expected map".to_string())),
                 }
                 Ok(())
             }
-            _ => Err(Error::Message("expected array".to_string())),
+            _ => Err(Error::TypeError("expected array".to_string())),
         }
     }
 
-    fn end(self) -> Result<()> {
+    fn end(self) -> RResult<()> {
         Ok(())
     }
 }
