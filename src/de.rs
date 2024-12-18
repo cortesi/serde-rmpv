@@ -23,7 +23,7 @@ where
     T::deserialize(&mut deserializer)
 }
 
-impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
+impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
     type Error = Error;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
@@ -508,7 +508,7 @@ impl<'a, 'de> ArrayAccess<'a, 'de> {
     }
 }
 
-impl<'de, 'a> SeqAccess<'de> for ArrayAccess<'a, 'de> {
+impl<'de> SeqAccess<'de> for ArrayAccess<'_, 'de> {
     type Error = Error;
 
     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
@@ -544,7 +544,7 @@ impl<'a, 'de> ValueMapAccess<'a, 'de> {
     }
 }
 
-impl<'de, 'a> MapAccess<'de> for ValueMapAccess<'a, 'de> {
+impl<'de> MapAccess<'de> for ValueMapAccess<'_, 'de> {
     type Error = Error;
 
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
@@ -593,7 +593,7 @@ impl<'a, 'de> UnitVariantAccess<'a, 'de> {
     }
 }
 
-impl<'de, 'a> de::EnumAccess<'de> for UnitVariantAccess<'a, 'de> {
+impl<'de> de::EnumAccess<'de> for UnitVariantAccess<'_, 'de> {
     type Error = Error;
     type Variant = Self;
 
@@ -606,7 +606,7 @@ impl<'de, 'a> de::EnumAccess<'de> for UnitVariantAccess<'a, 'de> {
     }
 }
 
-impl<'de, 'a> de::VariantAccess<'de> for UnitVariantAccess<'a, 'de> {
+impl<'de> de::VariantAccess<'de> for UnitVariantAccess<'_, 'de> {
     type Error = Error;
 
     fn unit_variant(self) -> Result<(), Error> {
