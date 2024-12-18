@@ -170,11 +170,23 @@ impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
         )
     }
 
-    fn deserialize_char<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        Err(Error::UnsupportedType)
+        match self.input {
+            rmpv::Value::String(s) => {
+                let s = s
+                    .as_str()
+                    .ok_or(Error::TypeError("expected string".to_string()))?;
+                let mut chars = s.chars();
+                match (chars.next(), chars.next()) {
+                    (Some(c), None) => visitor.visit_char(c),
+                    _ => Err(Error::TypeError("expected single char".to_string())),
+                }
+            }
+            _ => Err(Error::TypeError("expected string".to_string())),
+        }
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
@@ -677,6 +689,14 @@ mod tests {
         use serde_derive::Deserialize;
 
         super::from_value::<i8>(&rmpv::Value::from("foo")).expect_err("expected unimplemented");
+
+        assert_eq!(
+            'x',
+            from_value::<char>(&rmpv::Value::String("x".into())).unwrap()
+        );
+        from_value::<char>(&rmpv::Value::String("xy".into()))
+            .expect_err("expected single char error");
+        from_value::<char>(&rmpv::Value::from(42)).expect_err("expected type error");
 
         assert_eq!(
             "string",

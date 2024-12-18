@@ -109,7 +109,8 @@ impl ser::Serializer for &mut Serializer {
 
     // Serialize a char as a single-character string.
     fn serialize_char(self, v: char) -> Result<()> {
-        self.serialize_str(&v.to_string())
+        self.output = rmpv::Value::String(v.to_string().into());
+        Ok(())
     }
 
     fn serialize_str(self, v: &str) -> Result<()> {
@@ -471,6 +472,7 @@ mod tests {
     fn test_serialize() {
         let v: u64 = 23;
         assert_eq!(to_value(&v).unwrap(), rmpv::Value::from(23));
+        assert_eq!(to_value(&'x').unwrap(), rmpv::Value::String("x".into()));
         assert_eq!(
             to_value(&[1, 2, 3]).unwrap(),
             rmpv::Value::Array(vec![
