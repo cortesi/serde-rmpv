@@ -50,10 +50,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use serde_derive::{Deserialize, Serialize};
     use serde_with::{serde_as, Bytes};
+
+    use super::*;
 
     #[test]
     fn test_exttype_idemp() {

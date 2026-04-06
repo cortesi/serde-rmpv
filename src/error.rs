@@ -30,7 +30,7 @@ impl Display for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Error::TypeError(msg) => write!(formatter, "invalid type: {}", msg),
-            Error::Format(msg) => write!(formatter, "{}", msg),
+            Error::Format(msg) => write!(formatter, "format: {}", msg),
             Error::UnsupportedType => write!(formatter, "unsupported type"),
         }
     }

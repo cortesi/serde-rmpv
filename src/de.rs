@@ -665,10 +665,10 @@ impl<'de> de::VariantAccess<'de> for UnitVariantAccess<'_, 'de> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_derive::Deserialize;
-
     use serde_with::{serde_as, Bytes};
+
+    use super::*;
 
     #[test]
     fn test_exttype() {
@@ -684,8 +684,9 @@ mod tests {
 
     #[test]
     fn test_deserialize() {
-        use super::*;
         use serde_derive::Deserialize;
+
+        use super::*;
 
         super::from_value::<i8>(&rmpv::Value::from("foo")).expect_err("expected unimplemented");
 

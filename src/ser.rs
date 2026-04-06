@@ -447,12 +447,12 @@ impl ser::SerializeStructVariant for &mut Serializer {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use std::collections::HashMap;
 
     use serde_derive::Serialize;
     use serde_with::{serde_as, Bytes};
+
+    use super::*;
 
     #[test]
     fn test_ext_struct() {
