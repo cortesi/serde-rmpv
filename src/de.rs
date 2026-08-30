@@ -1,6 +1,7 @@
 use serde::{
+    Deserialize,
     de::{self, DeserializeSeed, MapAccess, SeqAccess, Unexpected, Visitor},
-    forward_to_deserialize_any, Deserialize,
+    forward_to_deserialize_any,
 };
 
 use crate::error::*;
@@ -666,7 +667,7 @@ impl<'de> de::VariantAccess<'de> for UnitVariantAccess<'_, 'de> {
 #[cfg(test)]
 mod tests {
     use serde_derive::Deserialize;
-    use serde_with::{serde_as, Bytes};
+    use serde_with::{Bytes, serde_as};
 
     use super::*;
 

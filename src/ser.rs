@@ -1,6 +1,6 @@
-use serde::{ser, Serialize};
+use serde::{Serialize, ser};
 
-use crate::{error::*, MSGPACK_EXT_STRUCT_NAME};
+use crate::{MSGPACK_EXT_STRUCT_NAME, error::*};
 
 pub fn to_value<T>(value: &T) -> Result<rmpv::Value, Error>
 where
@@ -228,7 +228,8 @@ impl ser::Serializer for &mut Serializer {
         self.serialize_seq(Some(len))
     }
 
-    // Tuple variants are represented as Array<Vec[ENUM_NAME, VARIANT_NAME, ... DATA ...]>.
+    // Tuple variants are represented as Array<Vec[ENUM_NAME, VARIANT_NAME, ... DATA
+    // ...]>.
     fn serialize_tuple_variant(
         self,
         name: &'static str,
@@ -253,8 +254,8 @@ impl ser::Serializer for &mut Serializer {
         self.serialize_map(Some(len))
     }
 
-    // Struct variants are represented as `[ ENUM_NAME, VARIANT_NAME: { K: V, ... } ]`.
-    // This is the externally tagged representation.
+    // Struct variants are represented as `[ ENUM_NAME, VARIANT_NAME: { K: V, ... }
+    // ]`. This is the externally tagged representation.
     fn serialize_struct_variant(
         self,
         name: &'static str,
@@ -450,7 +451,7 @@ mod tests {
     use std::collections::HashMap;
 
     use serde_derive::Serialize;
-    use serde_with::{serde_as, Bytes};
+    use serde_with::{Bytes, serde_as};
 
     use super::*;
 

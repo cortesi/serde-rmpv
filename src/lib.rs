@@ -1,7 +1,8 @@
 //! Serde integration for the rmpv MessagePack Value type.
 //!
-//! This crate handles all Serde data model types and includes special support for MessagePack's
-//! Ext type through the [`MSGPACK_EXT_STRUCT_NAME`] type annotation.
+//! This crate handles all Serde data model types and includes special support
+//! for MessagePack's Ext type through the [`MSGPACK_EXT_STRUCT_NAME`] type
+//! annotation.
 
 mod de;
 mod error;
@@ -51,7 +52,7 @@ where
 #[cfg(test)]
 mod tests {
     use serde_derive::{Deserialize, Serialize};
-    use serde_with::{serde_as, Bytes};
+    use serde_with::{Bytes, serde_as};
 
     use super::*;
 
