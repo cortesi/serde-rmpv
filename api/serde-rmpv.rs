@@ -16,6 +16,19 @@ use std::fmt::{Debug, Display};
 use rmpv::Value;
 use serde::{de::Deserialize, ser::Serialize};
 
+/// Name of the Serde newtype struct to represent MessagePack's Ext type
+///
+/// MessagePack Ext format: Ext(tag, binary)
+/// Serde data model: _ExtStruct((tag, binary))
+///
+/// # Example
+/// ```rust,ignore
+/// #[derive(Debug, PartialEq, Serialize, Deserialize)]
+/// #[serde(rename = "_ExtStruct")]
+/// struct ExtStruct((i8, Vec<u8>));
+/// ```
+pub const MSGPACK_EXT_STRUCT_NAME: &str = "_ExtStruct";
+
 #[derive(Debug, Display, serde::de::Error, serde::ser::Error, std::error::Error)]
 pub enum Error {
     /// Type mismatch error
@@ -45,16 +58,3 @@ where
 pub fn to_value<T>(value: &T) -> Result<Value, Error>
 where
     T: Serialize;
-
-/// Name of the Serde newtype struct to represent MessagePack's Ext type
-///
-/// MessagePack Ext format: Ext(tag, binary)
-/// Serde data model: _ExtStruct((tag, binary))
-///
-/// # Example
-/// ```rust,ignore
-/// #[derive(Debug, PartialEq, Serialize, Deserialize)]
-/// #[serde(rename = "_ExtStruct")]
-/// struct ExtStruct((i8, Vec<u8>));
-/// ```
-pub const MSGPACK_EXT_STRUCT_NAME: &str = "_ExtStruct";
